@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Animazione Complessa Particelle & Onde</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+  body, html {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    font-family: 'Poppins', sans-serif;
+  }
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+  }
+  .overlay-text {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    text-align: center;
+    z-index: 10;
+    user-select: none;
+  }
+  .overlay-text h1 {
+    font-weight: 700;
+    font-size: 3.5rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.3em;
+    text-shadow: 0 0 10px rgba(255 255 255 / 0.3);
+  }
+  .overlay-text p {
+    font-weight: 400;
+    font-size: 1.3rem;
+    opacity: 0.8;
+    max-width: 600px;
+    margin: 0 auto;
+    text-shadow: 0 0 8px rgba(0 0 0 / 0.3);
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div class="overlay-text">
+  <h1>Particelle & Onde Fluide</h1>
+  <p>Un'animazione complessa con particelle che danzano seguendo onde, reagendo al movimento del mouse.</p>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  let width, height;
+  let particles = [];
+  const PARTICLE_COUNT = 300;
+
+  const mouse = {
+    x: null,
+    y: null,
+    radius: 150
+  };
+
+  // Particle class
+  class Particle {
+    constructor(x, y, size, color, speed) {
+      this.baseX = x;
+      this.baseY = y;
+      this.x = x;
+      this.y = y;
+      this.size = size;
+      this.color = color;
+      this.speed = speed;
+      this.angle = Math.random() * Math.PI * 2;
+      this.frequency = 0.002 + Math.random() * 0.003;
+      this.amplitude = 10 + Math.random() * 10;
+    }
+
+    update(time) {
+      this.angle += this.speed;
+
+      // Movimento onda fluida su Y con offset sull'asse X
+      this.x = this.baseX + Math.sin(time * this.frequency + this.angle) * this.amplitude;
+      this.y = this.baseY + Math.cos(time * this.frequency + this.angle) * this.amplitude;
+
+      // Interazione con mouse: particelle si allontanano
+      if (mouse.x && mouse.y) {
+        let dx = this.x - mouse.x;
+        let dy = this.y - mouse.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+
+        if (dist < mouse.radius) {
+          let angle = Math.atan2(dy, dx);
+          let force = (mouse.radius - dist) / mouse.radius;
+          let offsetX = Math.cos(angle) * force * 15;
+          let offsetY = Math.sin(angle) * force * 15;
+          this.x += offsetX;
+          this.y += offsetY;
+        }
+      }
+    }
+
+    draw() {
+      ctx.beginPath();
+      ctx.fillStyle = this.color;
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 8;
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function init() {
+    particles = [];
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+
+    // Distribuzione particelle casuale in area centrale
+    for (let i=0; i<PARTICLE_COUNT; i++) {
+      let x = Math.random() * width * 0.8 + width * 0.1;
+      let y = Math.random() * height * 0.8 + height * 0.1;
+      let size = Math.random() * 2 + 1;
+      // Gradient di colori
+      let colors = ['#ff6a00', '#ee0979', '#00f260', '#0575e6', '#f7971e'];
+      let color = colors[i % colors.length];
+      let speed = 0.01 + Math.random() * 0.02;
+      particles.push(new Particle(x, y, size, color, speed));
+    }
+  }
+
+  function animate(time=0) {
+    ctx.clearRect(0, 0, width, height);
+
+    // Sfondo sfumato animato (leggera variazione di colore)
+    let gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, `hsl(${(time/50) % 360}, 60%, 20%)`);
+    gradient.addColorStop(1, `hsl(${(time/50 + 60) % 360}, 70%, 30%)`);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    particles.forEach(p => {
+      p.update(time);
+      p.draw();
+    });
+
+    requestAnimationFrame(animate);
+  }
+
+  window.addEventListener('resize', init);
+  window.addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+  window.addEventListener('mouseout', e => {
+    mouse.x = null;
+    mouse.y = null;
+  });
+
+  init();
+  animate();
+})();
+</script>
+
+</body>
+</html>
